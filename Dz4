@@ -1,0 +1,71 @@
+```mermaid
+
+sequenceDiagram
+    autonumber
+    
+    actor Client as Клиент
+    participant System as Система Бронирования
+    participant Gateway as Платежный Шлюз
+    actor Admin as Администратор Площадки
+    actor Contractor as Подрядчики
+    actor Manager as Менеджер
+
+    Note over Client, System: ЭТАП 1: Запрос на бронирование
+
+    Client->>System: Проверить доступность (Дата, Тип мероприятия)
+    activate System
+    
+    alt Площадка недоступна
+        System-->>Client: Предложить альтернативные даты
+    else Площадка доступна
+        System-->>Client: Предоставить стоимость и условия
+        deactivate System
+        
+        Note over Client, Gateway: ЭТАП 2: Подтверждение и Оплата
+
+        Client->>System: Подтвердить бронирование
+        activate System
+        System->>Gateway: Инициировать транзакцию
+        activate Gateway
+        
+        alt Платеж отклонен
+            Gateway-->>System: Ошибка: Недостаточно средств / Сбой
+            System-->>Client: Уведомление об отказе. Повторить оплату?
+        else Платеж успешен
+            Gateway-->>System: Транзакция подтверждена
+            deactivate Gateway
+            
+            System-->>Client: Бронирование успешно оформлено
+            par Уведомления участников
+                System->>Client: Отправить чек и детали
+                System->>Admin: Уведомление: Новое мероприятие
+            end
+            
+            Note over Admin, Contractor: ЭТАП 3: Организация мероприятия
+
+            Admin->>System: Сформировать список задач (Декор, Кейтеринг)
+            activate System
+            
+            par Распределение задач (Параллельно)
+                System->>Contractor: Уведомление: Новая задача А
+                System->>Contractor: Уведомление: Новая задача Б
+            and
+                Contractor-->>System: Подтверждение выполнения А
+                Contractor-->>System: Подтверждение выполнения Б
+            end
+            
+            System->>Admin: Сводный отчет о готовности
+            deactivate System
+        end
+    end
+
+    Note over Client, Manager: ЭТАП 4: Завершение и Обратная связь
+
+    %% Предполагается, что мероприятие прошло
+    System->>Client: Запрос отзыва о сервисе
+    activate System
+    Client->>System: Отправить оценку и комментарий
+    System->>Manager: Финальный отчет (KPI и NPS)
+    deactivate System
+
+```
