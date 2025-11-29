@@ -1,80 +1,81 @@
 ```mermaid
 
-componentDiagram
+graph TD
     classDef frontend fill:#f9f9f9,stroke:#333,stroke-width:2px;
     classDef backend fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
     classDef data fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
     classDef external fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5;
 
-    %%  (FRONTEND)
-    package "Presentation Layer" {
-        [Client Web App]:::frontend
-        [Courier Mobile App]:::frontend
-    }
+    %% 1.  ПРЕДСТАВЛЕНИЯ
+    subgraph Presentation ["Presentation Layer (Frontend)"]
+        ClientWeb[Client Web App]:::frontend
+        CourierApp[Courier Mobile App]:::frontend
+    end
 
-    %%  БИЗНЕС-ЛОГИКA (BACKEND)
-    package "Backend Ecosystem" {
-        [API Gateway]:::backend
+    %% 2.  БИЗНЕС-ЛОГИКA
+    subgraph BackendSys ["Backend Ecosystem"]
+        APIGateway[API Gateway]:::backend
         
-        component "Order Management Service" as OrderCore:::backend
-        component "Warehouse System" as Warehouse:::backend
-        component "Route Optimizer Engine" as Optimizer:::backend
-        component "Analytics & Reporting" as Analytics:::backend
-        component "Notification Service" as Notifier:::backend
-        component "Courier Integration Adapter" as CourierBridge:::backend
-    }
+        OrderCore[Order Management Service]:::backend
+        Warehouse[Warehouse System]:::backend
+        Optimizer[Route Optimizer Engine]:::backend
+        Analytics[Analytics & Reporting]:::backend
+        Notifier[Notification Service]:::backend
+        CourierBridge[Courier Integration Adapter]:::backend
+    end
 
     %% 3.  ДАННЫE
-    package "Data Layer" {
-        database "Main Database (SQL/NoSQL)" as DB:::data
-        [Redis Cache]:::data
-    }
+    subgraph DataLayer ["Data Layer"]
+        DB[(Main Database SQL/NoSQL)]:::data
+        Redis[Redis Cache]:::data
+    end
 
     %% 4. ВНЕШНИЕ СИСТЕМЫ
-    package "External Systems" {
-        [External Logistics APIs]:::external
-        [Payment Gateway]:::external
-        [Maps & Geo API]:::external
-    }
+    subgraph ExternalSys ["External Systems"]
+        ExtLogistics[External Logistics APIs]:::external
+        PaymentGw[Payment Gateway]:::external
+        GeoAPI[Maps & Geo API]:::external
+    end
 
 
 
 
-    %%  СВЯЗИ И ИНТЕРФЕЙСЫ 
 
-    %% Frontend -> Backend
-    [Client Web App] -- "HTTPS / REST JSON" --> [API Gateway]
-    [Courier Mobile App] -- "HTTPS / REST / WebSocket" --> [API Gateway]
+    %%  СВЯЗИ 
 
-    %% Gateway -> Services
-    [API Gateway] ..> OrderCore : Routing
-    [API Gateway] ..> Analytics : Routing
+    %% Frontend -> Gateway
+    ClientWeb -- "HTTPS / REST JSON" --> APIGateway
+    CourierApp -- "HTTPS / WebSocket" --> APIGateway
 
-    %% Order Core Interactions
+    %% Gateway Routing
+    APIGateway --> OrderCore
+    APIGateway --> Analytics
+
+    %% Order Core Logic
     OrderCore -- "gRPC (Fast Calc)" --> Optimizer
     OrderCore -- "Internal API" --> Warehouse
     OrderCore -- "Async Events" --> Notifier
     OrderCore -- "JDBC / ORM" --> DB
-    OrderCore ..> [Redis Cache] : Caching
+    OrderCore -.-> Redis
 
-    %% Warehouse Interactions
-    Warehouse -- "JDBC" --> DB
+    %% Warehouse Logic
+    Warehouse --> DB
 
-    %% Optimization Interactions
-    Optimizer -- "REST" --> [Maps & Geo API] : Geocoding
-    Optimizer ..> DB : Read Orders
+    %% Optimizer Logic
+    Optimizer -- "REST" --> GeoAPI
+    Optimizer -.-> DB
 
-    %% Integrations
-    CourierBridge -- "Webhooks / REST" --> [External Logistics APIs]
+    %% Courier Bridge
+    CourierBridge -- "Webhooks / REST" --> ExtLogistics
     CourierBridge -- "Update Status" --> OrderCore
-    
-    OrderCore -- "Secure TLS" --> [Payment Gateway]
+
+    %% Payments
+    OrderCore -- "Secure TLS" --> PaymentGw
 
     %% Analytics & Notifications
-    Analytics ..> DB : Read Only Replicas
-    Notifier -- "SMTP / Push" --> [Client Web App]
-    Notifier -- "Push Notifications" --> [Courier Mobile App]
-
+    Analytics -.-> DB
+    Notifier -.-> ClientWeb
+    Notifier -.-> CourierApp
 ```
 
 
